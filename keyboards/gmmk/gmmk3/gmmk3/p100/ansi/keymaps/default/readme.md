@@ -1,1 +1,0 @@
-# GMMK3 100% ANSI Layout
