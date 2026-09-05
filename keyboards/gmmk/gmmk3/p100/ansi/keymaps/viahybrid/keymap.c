@@ -48,6 +48,15 @@ enum custom_keycodes {
     ORGB = SAFE_RANGE,
     };
 
+#ifndef ORGB_FLASH_DURATION_MS
+#    define ORGB_FLASH_DURATION_MS 500
+#endif
+
+#ifdef RGB_MATRIX_ENABLE
+static uint32_t orgb_flash_timer  = 0;
+static bool     orgb_flash_active = false;
+#endif
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record)
 {
     switch (keycode) {
@@ -56,11 +65,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             if (record->event.pressed) {
                 is_orgb_mode = !is_orgb_mode;
             #ifdef RGB_MATRIX_ENABLE
-            if (is_orgb_mode) {
-			        rgb_matrix_set_color_all(0,255,0);
-				} else {
-					rgb_matrix_set_color_all(0,0,255);
-				}
+                orgb_flash_timer  = timer_read32();
+                orgb_flash_active = true;
             #endif
             }
         #endif
@@ -68,6 +74,23 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record)
             return true; // Process all other keycodes normally
     }
 }
+
+#ifdef RGB_MATRIX_ENABLE
+bool rgb_matrix_indicators_user(void) {
+    if (orgb_flash_active) {
+        if (timer_elapsed32(orgb_flash_timer) < ORGB_FLASH_DURATION_MS) {
+            if (is_orgb_mode) {
+                rgb_matrix_set_color_all(0, 255, 0);
+            } else {
+                rgb_matrix_set_color_all(0, 0, 255);
+            }
+        } else {
+            orgb_flash_active = false;
+        }
+    }
+    return true;
+}
+#endif
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     /* Base Layer (Default Layer) */
